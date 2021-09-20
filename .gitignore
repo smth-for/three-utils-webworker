@@ -1,0 +1,9 @@
+node_modules
+
+/dist/.gitkeep*
+/dist/index*
+/dist/*map
+/dist/*LICENSE
+
+/dist/workers/*map
+/dist/workers/*LICENSE*
