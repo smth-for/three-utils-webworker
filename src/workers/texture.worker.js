@@ -1,14 +1,12 @@
-import * as THREE from "three";
+import { ImageBitmapLoader } from "three";
 
-const loader = new THREE.ImageBitmapLoader();
+const loader = new ImageBitmapLoader();
 loader.setOptions( { imageOrientation: 'flipY' } );
-var counter = 1;
 
 addEventListener("message", function (message) {
-  counter += 1;
   loader.load(
     // resource URL
-    message.data + counter.toString(),
+    message.data.url,
     // onLoad callback
     (imageBitmap) => {
       postMessage({ imageBitmap: imageBitmap, error: null });

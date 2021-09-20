@@ -4,43 +4,15 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
 import Stats from "three/examples/jsm/libs/stats.module";
 
-const loader = new THREE.ImageBitmapLoader();
-loader.setOptions({ imageOrientation: "flipY" });
-var counter = 1;
-
-var workerTest = new Worker("./workers/test.worker.js");
-var workerTexture = new Worker("./workers/texture.worker.js");
-
-workerTest.addEventListener("message", function (message) {
-  console.log("RESPONSE WW TEST", message.data);
-});
-
-workerTexture.addEventListener("message", function (message) {
-  console.log("RESPONSE WW TEXTURE", message.data);
-  sphere.material.color = new THREE.Color(0xff00ff);
-  sphere.material.map = new THREE.CanvasTexture(message.data.imageBitmap);
-  sphere.material.needsUpdate = true;
-  console.log(sphere.material.color, sphere.material.map);
-});
-
-var activeWorkerTest = null;
-var activeWorkerTexture = null;
-var changeTextureInterval = null;
 // Debug
 const gui = new dat.GUI();
-
-gui.add({ workerAdd: workerAdd }, "workerAdd").name("Worker add");
-gui.add({ workerTex: workerTex }, "workerTex").name("workerTex");
-gui.add({ changeTexture: changeTexture }, "changeTexture").name("changeTexture");
-var perfFolder = gui.addFolder("Performance");
-
 const stats = Stats();
 stats.domElement.height = "48px";
 [].forEach.call(
   stats.domElement.children,
   (child) => (child.style.display = "")
 );
-
+var perfFolder = gui.addFolder("Performance");
 var perfLi = document.createElement("li");
 stats.domElement.style.position = "static";
 perfLi.appendChild(stats.domElement);
@@ -57,24 +29,31 @@ const scene = new THREE.Scene();
 const geometry = new THREE.PlaneGeometry(1, 1);
 
 // Materials
-
 const material = new THREE.MeshStandardMaterial({
   color: 0xffff00,
-  side: THREE.DoubleSide,
+  side: THREE.FrontSide,
 });
-//material.color = new THREE.Color(0xff0000);
 
 // Mesh
-const sphere = new THREE.Mesh(geometry, material);
-scene.add(sphere);
+const plane1 = new THREE.Mesh(geometry, material);
+const plane2 = new THREE.Mesh(geometry, material);
+plane2.rotateY(Math.PI);
+scene.add(plane1);
+scene.add(plane2);
 
 // Lights
 
-const pointLight = new THREE.PointLight(0xffffff, 1);
-pointLight.position.x = 2;
-pointLight.position.y = 3;
-pointLight.position.z = 4;
-scene.add(pointLight);
+const pointLight1 = new THREE.PointLight(0xffffff, 1);
+pointLight1.position.x = 2;
+pointLight1.position.y = 3;
+pointLight1.position.z = 4;
+scene.add(pointLight1);
+
+const pointLight2 = new THREE.PointLight(0xffffff, 1);
+pointLight2.position.x = -2;
+pointLight2.position.y = -3;
+pointLight2.position.z = -4;
+scene.add(pointLight2);
 
 /**
  * Sizes
@@ -114,8 +93,9 @@ camera.position.z = 2;
 scene.add(camera);
 
 // Controls
-// const controls = new OrbitControls(camera, canvas)
-// controls.enableDamping = true
+const controls = new OrbitControls(camera, canvas);
+controls.autoRotate = true;
+controls.enableDamping = true;
 
 /**
  * Renderer
@@ -136,10 +116,10 @@ const tick = () => {
   const elapsedTime = clock.getElapsedTime();
 
   // Update objects
-  sphere.rotation.y = 0.5 * elapsedTime;
+  // sphere.rotation.y = 0.5 * elapsedTime;
 
   // Update Orbital Controls
-  // controls.update()
+  controls.update();
 
   // Render
   renderer.render(scene, camera);
@@ -152,60 +132,60 @@ const tick = () => {
 
 tick();
 
-function workerAdd() {
-  console.log(activeWorkerTest);
-  if (activeWorkerTest) {
-    clearInterval(activeWorkerTest);
-    activeWorkerTest = null;
-  } else {
-    activeWorkerTest = setInterval(() => {
-      workerTest.postMessage(1);
-    }, 100);
-  }
-}
+/*
+ * WORKERS
+ */
 
-function workerTex() {
-  console.log(activeWorkerTexture);
+var workerTexture = new Worker("./workers/texture.worker.js");
+var activeWorkerTexture = null;
+
+workerTexture.addEventListener("message", function (message) {
+  console.log("WebW Texture Message", message.data);
+  if (!message.data.error) {
+    plane1.material.color = new THREE.Color(0xff00ff);
+    plane1.material.map = new THREE.CanvasTexture(message.data.imageBitmap);
+    plane1.material.needsUpdate = true;
+  } else {
+    alert("Worker Texture Error " + message.data.error);
+  }
+});
+
+const workerTextureGui = gui.addFolder("Texture Worker");
+const workerTextureParams = {
+  intervalTime: 1000,
+  counter: 1,
+  resetCounter: resetCounter,
+  workerRight: workerTextureRight,
+  workerError: workerTextureError,
+};
+workerTextureGui.add(workerTextureParams, "intervalTime", 1, 1000, 10);
+workerTextureGui.add(workerTextureParams, "resetCounter").name("Reset Counter");
+workerTextureGui.add(workerTextureParams, "workerRight").name("Toggle Worker");
+workerTextureGui.add(workerTextureParams, "workerError").name("Error Worker");
+/*
+ * WEB WORKER FUNCTIONS
+ */
+
+// WORKER TEXTURE
+function workerTextureRight() {
   if (activeWorkerTexture) {
     clearInterval(activeWorkerTexture);
     activeWorkerTexture = null;
   } else {
     activeWorkerTexture = setInterval(() => {
-      workerTexture.postMessage(
-        "https://dummyimage.com/300x300/db1cdb/000000.png&text="
-      );
-    }, 10);
+      workerTexture.postMessage({
+        url:
+          "https://dummyimage.com/300x300/db1cdb/000000.png&text=" +
+          workerTextureParams.counter++,
+      });
+    }, workerTextureParams.intervalTime);
   }
 }
 
-function changeTexture() {
-  // changeTextureInterval
+function workerTextureError() {
+  workerTexture.postMessage({ url: "" });
+}
 
-  console.log(changeTextureInterval);
-  if (changeTextureInterval) {
-    clearInterval(changeTextureInterval);
-    changeTextureInterval = null;
-  } else {
-    changeTextureInterval = setInterval(() => {
-      counter += 1;
-      loader.load(
-        // resource URL
-        "https://dummyimage.com/300x300/db1cdb/000000.png&text=" +
-          counter.toString(),
-        // onLoad callback
-        (imageBitmap) => {
-          sphere.material.color = new THREE.Color(0xff00ff);
-          sphere.material.map = new THREE.CanvasTexture(
-            imageBitmap
-          );
-          sphere.material.needsUpdate = true;
-          console.log(sphere.material.color, sphere.material.map);
-        },
-        undefined,
-        function (err) {
-          console.log("An error happened");
-        }
-      );
-    }, 10);
-  }
+function resetCounter() {
+  workerTextureParams.counter = 1;
 }

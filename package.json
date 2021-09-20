@@ -10,7 +10,13 @@
     "three",
     "texture"
   ],
-  "license": "MIT",
+  "homepage": "https://github.com/smth-for/three-utils-webworker#readme",
+  "bugs": {
+    "url" : "https://github.com/smth-for/three-utils-webworker/issues",
+    "email" : "technical@smth.it"
+  },
+  "license": "MIT <https://github.com/smth-for/three-utils-webworker/blob/main/LICENSE>",
+  "author": "Michael Musso <mmusso@smth.it> (https://smth.it/)",
   "scripts": {
     "build": "rimraf ./dist && webpack --config ./bundler/webpack.prod.js",
     "dev": "webpack serve --config ./bundler/webpack.dev.js"
