@@ -8,8 +8,6 @@ const entryFiles = glob
   .sync("./src/**/*.js")
   .reduce((previousValue, currentValue, currentIndex, array) => {
     let response = {};
-    console.log("TEST--------", currentIndex, previousValue, currentValue);
-
     if (typeof previousValue === "string") {
       response = {
         [(previousValue.includes("worker") ? 'workers/' : '') + path.basename(previousValue, path.extname(previousValue))]: previousValue,
@@ -24,8 +22,6 @@ const entryFiles = glob
 
     return response;
   });
-
-console.log("TEST--------", entryFiles);
 
 module.exports = {
   entry: entryFiles,

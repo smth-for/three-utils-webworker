@@ -4,6 +4,3 @@ node_modules
 /dist/index*
 /dist/*map
 /dist/*LICENSE
-
-/dist/workers/*map
-/dist/workers/*LICENSE*
