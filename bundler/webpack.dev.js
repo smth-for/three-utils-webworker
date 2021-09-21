@@ -24,6 +24,9 @@ module.exports = merge(
             disableHostCheck: true,
             overlay: true,
             noInfo: true,
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+            },
             after: function(app, server, compiler)
             {
                 const port = server.options.port

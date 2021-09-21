@@ -136,19 +136,19 @@ tick();
  * WORKERS
  */
 
-var workerTexture = new Worker("./workers/texture.worker.js");
+// var workerTexture = new Worker("./workers/texture.worker.js");
 var activeWorkerTexture = null;
 
-workerTexture.addEventListener("message", function (message) {
-  console.log("WebW Texture Message", message.data);
-  if (!message.data.error) {
-    plane1.material.color = new THREE.Color(0xff00ff);
-    plane1.material.map = new THREE.CanvasTexture(message.data.imageBitmap);
-    plane1.material.needsUpdate = true;
-  } else {
-    alert("Worker Texture Error " + message.data.error);
-  }
-});
+// workerTexture.addEventListener("message", function (message) {
+//   console.log("WebW Texture Message", message.data);
+//   if (!message.data.error) {
+//     plane1.material.color = new THREE.Color(0xff00ff);
+//     plane1.material.map = new THREE.CanvasTexture(message.data.imageBitmap);
+//     plane1.material.needsUpdate = true;
+//   } else {
+//     alert("Worker Texture Error " + message.data.error);
+//   }
+// });
 
 const workerTextureGui = gui.addFolder("Texture Worker");
 const workerTextureParams = {
@@ -173,6 +173,21 @@ function workerTextureRight() {
     activeWorkerTexture = null;
   } else {
     activeWorkerTexture = setInterval(() => {
+      var workerTexture = new Worker("./workers/texture.worker.js");
+
+      workerTexture.addEventListener("message", function (message) {
+        console.log("WebW Texture Message", message.data);
+        if (!message.data.error) {
+          plane1.material.color = new THREE.Color(0xff00ff);
+          plane1.material.map = new THREE.CanvasTexture(
+            message.data.imageBitmap
+          );
+          plane1.material.needsUpdate = true;
+        } else {
+          alert("Worker Texture Error " + message.data.error);
+        }
+        workerTexture.terminate();
+      });
       workerTexture.postMessage({
         url:
           "https://dummyimage.com/300x300/db1cdb/000000.png&text=" +

@@ -4,17 +4,14 @@ const loader = new ImageBitmapLoader();
 loader.setOptions( { imageOrientation: 'flipY' } );
 
 addEventListener("message", function (message) {
-  loader.load(
-    // resource URL
-    message.data.url,
-    // onLoad callback
-    (imageBitmap) => {
-      postMessage({ imageBitmap: imageBitmap, error: null });
-    },
-    undefined,
-    function (err) {
-      console.log("An error happened");
-      postMessage({ imageBitmap: null, error: err });
-    }
-  );
+  if(message.data.url) {
+    loader.load(
+      message.data.url,
+      (imageBitmap) => postMessage({ id: message.data.id, imageBitmap: imageBitmap, error: null }),
+      undefined,
+      (err) => postMessage({ id: message.data.id, imageBitmap: null, error: err })
+    );
+  } else {
+    postMessage({ id: message.data.id, imageBitmap: null, error: 'Missing Resource URL' })
+  }
 });
