@@ -136,20 +136,7 @@ tick();
  * WORKERS
  */
 
-// var workerTexture = new Worker("./workers/texture.worker.js");
-var activeWorkerTexture = null;
-
-// workerTexture.addEventListener("message", function (message) {
-//   console.log("WebW Texture Message", message.data);
-//   if (!message.data.error) {
-//     plane1.material.color = new THREE.Color(0xff00ff);
-//     plane1.material.map = new THREE.CanvasTexture(message.data.imageBitmap);
-//     plane1.material.needsUpdate = true;
-//   } else {
-//     alert("Worker Texture Error " + message.data.error);
-//   }
-// });
-
+var activeWorkerGLTF = null;
 const workerTextureGui = gui.addFolder("Texture Worker");
 const workerTextureParams = {
   intervalTime: 1000,
@@ -162,17 +149,29 @@ workerTextureGui.add(workerTextureParams, "intervalTime", 1, 1000, 10);
 workerTextureGui.add(workerTextureParams, "resetCounter").name("Reset Counter");
 workerTextureGui.add(workerTextureParams, "workerRight").name("Toggle Worker");
 workerTextureGui.add(workerTextureParams, "workerError").name("Error Worker");
+
+var activeWorkerGLTF = null;
+const workerGLTFGui = gui.addFolder("GLTF Worker");
+const workerGLTFParams = {
+  dracoUrl: '', // https://vestanest.smth.it/draco-r121/
+  gltfUrl: '',
+  workerRight: workerGLTFRight,
+  workerError: workerGLTFError,
+};
+workerGLTFGui.add(workerGLTFParams, "workerRight").name("Toggle Worker");
+workerGLTFGui.add(workerGLTFParams, "workerError").name("Error Worker");
+
 /*
  * WEB WORKER FUNCTIONS
  */
 
 // WORKER TEXTURE
 function workerTextureRight() {
-  if (activeWorkerTexture) {
-    clearInterval(activeWorkerTexture);
-    activeWorkerTexture = null;
+  if (activeWorkerGLTF) {
+    clearInterval(activeWorkerGLTF);
+    activeWorkerGLTF = null;
   } else {
-    activeWorkerTexture = setInterval(() => {
+    activeWorkerGLTF = setInterval(() => {
       var workerTexture = new Worker("./workers/texture.worker.js");
 
       workerTexture.addEventListener("message", function (message) {
@@ -203,4 +202,26 @@ function workerTextureError() {
 
 function resetCounter() {
   workerTextureParams.counter = 1;
+}
+
+// WORKER GLTF
+function workerGLTFRight() {
+  var workerGLTF = new Worker("./workers/texture.worker.js");
+
+      workerGLTF.addEventListener("message", function (message) {
+        console.log("WebW GLTF Message", message.data);
+        if (!message.data.error) {
+        } else {
+          alert("Worker GLTF Error " + message.data.error);
+        }
+        workerGLTF.terminate();
+      });
+      workerGLTF.postMessage({
+        action: 'init',
+        url: workerGLTFParams.dracoUrl
+      });
+}
+
+function workerGLTFError() {
+  workerTexture.postMessage({});
 }
