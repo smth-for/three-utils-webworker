@@ -19,6 +19,14 @@ perfLi.appendChild(stats.domElement);
 perfLi.classList.add("gui-stats");
 perfFolder.__ul.appendChild(perfLi);
 
+var settings = {
+  controls: {
+    autoRotate: false,
+    enableDamping: true,
+  }
+}
+var settingsFolder = gui.addFolder("Settings");
+
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
 
@@ -85,7 +93,7 @@ const camera = new THREE.PerspectiveCamera(
   75,
   sizes.width / sizes.height,
   0.1,
-  100
+  1000
 );
 camera.position.x = 0;
 camera.position.y = 0;
@@ -94,9 +102,12 @@ scene.add(camera);
 
 // Controls
 const controls = new OrbitControls(camera, canvas);
-controls.autoRotate = true;
-controls.enableDamping = true;
+controls.autoRotate = settings.controls.autoRotate;
+controls.enableDamping = settings.controls.enableDamping;
 
+var controlsFolder = settingsFolder.addFolder("Controls");
+controlsFolder.add(settings.controls, 'autoRotate').onFinishChange((v) => controls.autoRotate = v);
+controlsFolder.add(settings.controls, 'enableDamping').onFinishChange((v) => controls.enableDamping = v);
 /**
  * Renderer
  */
@@ -139,6 +150,7 @@ tick();
 var activeWorkerGLTF = null;
 const workerTextureGui = gui.addFolder("Texture Worker");
 const workerTextureParams = {
+  worker: null,
   intervalTime: 1000,
   counter: 1,
   resetCounter: resetCounter,
@@ -153,12 +165,17 @@ workerTextureGui.add(workerTextureParams, "workerError").name("Error Worker");
 var activeWorkerGLTF = null;
 const workerGLTFGui = gui.addFolder("GLTF Worker");
 const workerGLTFParams = {
-  dracoUrl: '', // https://vestanest.smth.it/draco-r121/
-  gltfUrl: '',
-  workerRight: workerGLTFRight,
+  worker: null,
+  initWorker: false,
+  dracoUrl: "https://vestanest.smth.it/draco-r121/", // 
+  gltfUrl: "https://vestanest.smth.it/download/gltf/5e25ba211250c8419a6b41b2",
+  workerInit: workerGLTFInit,
+  workerLoad: workerGLTFLoad,
   workerError: workerGLTFError,
 };
-workerGLTFGui.add(workerGLTFParams, "workerRight").name("Toggle Worker");
+workerGLTFGui.add(workerGLTFParams, "gltfUrl");
+workerGLTFGui.add(workerGLTFParams, "workerInit").name("Init Worker");
+workerGLTFGui.add(workerGLTFParams, "workerLoad").name("Load Worker");
 workerGLTFGui.add(workerGLTFParams, "workerError").name("Error Worker");
 
 /*
@@ -170,34 +187,40 @@ function workerTextureRight() {
   if (activeWorkerGLTF) {
     clearInterval(activeWorkerGLTF);
     activeWorkerGLTF = null;
+    workerTextureParams.worker.terminate();
+    workerTextureParams.worker = null;
   } else {
-    activeWorkerGLTF = setInterval(() => {
-      var workerTexture = new Worker("./workers/texture.worker.js");
-
-      workerTexture.addEventListener("message", function (message) {
+    if(!workerTextureParams.worker) {
+      workerTextureParams.worker = new Worker("./workers/texture.worker.js");
+      workerTextureParams.worker.addEventListener("message", function (message) {
         console.log("WebW Texture Message", message.data);
         if (!message.data.error) {
-          plane1.material.color = new THREE.Color(0xff00ff);
-          plane1.material.map = new THREE.CanvasTexture(
-            message.data.imageBitmap
-          );
+          // plane1.material.color = new THREE.Color(0xff00ff);
+          const m = new THREE.DataTexture(message.data.imageBitmap);
+          // plane1.material.map = new THREE.CanvasTexture(
+          //   message.data.imageBitmap
+          // );
+          m.flipY = true;
+          plane1.material.map = m;
           plane1.material.needsUpdate = true;
         } else {
           alert("Worker Texture Error " + message.data.error);
         }
-        workerTexture.terminate();
       });
-      workerTexture.postMessage({
+    }
+    activeWorkerGLTF = setInterval(() => {
+      var counterTmp = workerTextureParams.counter++;
+      workerTextureParams.worker.postMessage({
+        id: counterTmp,
         url:
-          "https://dummyimage.com/300x300/db1cdb/000000.png&text=" +
-          workerTextureParams.counter++,
+          "https://dummyimage.com/300x300/db1cdb/000000.png&text=" + counterTmp,
       });
     }, workerTextureParams.intervalTime);
   }
 }
 
 function workerTextureError() {
-  workerTexture.postMessage({ url: "" });
+  workerTextureParams.worker.postMessage({ url: "" });
 }
 
 function resetCounter() {
@@ -205,23 +228,43 @@ function resetCounter() {
 }
 
 // WORKER GLTF
-function workerGLTFRight() {
-  var workerGLTF = new Worker("./workers/texture.worker.js");
+function workerGLTFInit() {
+  workerGLTFParams.worker = new Worker("./workers/gltf.worker.js");
 
-      workerGLTF.addEventListener("message", function (message) {
-        console.log("WebW GLTF Message", message.data);
-        if (!message.data.error) {
-        } else {
-          alert("Worker GLTF Error " + message.data.error);
-        }
-        workerGLTF.terminate();
+  workerGLTFParams.worker.addEventListener("message", function (message) {
+    console.log("WebW GLTF Message", message.data);
+    if (!message.data.error) {
+      if(message.data.action === "init") {workerGLTFParams.initWorker = true;}
+      if(message.data.action === "load") {parseSceneAndInsert(message.data.gltf)}
+    } else {
+      alert("Worker GLTF Error " + message.data.error);
+    }
+    // workerGLTF.terminate();
+  });
+  workerGLTFParams.worker.postMessage({
+    action: "init",
+    url: workerGLTFParams.dracoUrl,
+  });
+}
+
+function workerGLTFLoad() {
+  var intervalGLTF = setInterval(() => {
+    if(workerGLTFParams.initWorker) {
+      workerGLTFParams.worker.postMessage({
+        action: "load",
+        url: workerGLTFParams.gltfUrl,
       });
-      workerGLTF.postMessage({
-        action: 'init',
-        url: workerGLTFParams.dracoUrl
-      });
+      clearInterval(intervalGLTF);
+    }
+  }, 100)
 }
 
 function workerGLTFError() {
-  workerTexture.postMessage({});
+  workerGLTFParams.worker.postMessage({url: ''});
+}
+
+function parseSceneAndInsert(sceneJson) {
+  const mesh = new THREE.ObjectLoader().parse( sceneJson );
+  mesh.material = material;
+  scene.add(mesh);
 }

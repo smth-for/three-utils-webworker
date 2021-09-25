@@ -31,12 +31,12 @@ function load(message) {
     if(message.data.url) {
         gltfLoader.load(
           message.data.url,
-          (gltf) => postMessage({ id: message.data.id, gltf: gltf, error: null }),
+          (gltf) => postMessage({ id: message.data.id, action: message.data.action, gltf: gltf.scene.toJSON(), error: null }),
           undefined,
-          (err) => postMessage({ id: message.data.id, gltf: null, error: err })
+          (err) => postMessage({ id: message.data.id, action: message.data.action, gltf: null, error: {message: err.message, error: err.error} })
         );
       } else {
-        postMessage({ id: message.data.id, imageBitmap: null, error: 'Missing Resource URL' })
+        postMessage({ id: message.data.id, action: message.data.action, gltf: null, error: 'Missing Resource URL' })
       }
 }
 

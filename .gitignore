@@ -4,3 +4,5 @@ node_modules
 /dist/index*
 /dist/*map
 /dist/*LICENSE
+.DS_Store
+static/.gitkeep*
