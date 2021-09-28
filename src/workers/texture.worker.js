@@ -1,17 +1,46 @@
+import { VERSION } from '../version';
 import { ImageBitmapLoader } from "three";
 
 const loader = new ImageBitmapLoader();
-loader.setOptions( { imageOrientation: 'flipY' } );
+
+const functions = {
+  init: init,
+  load: load,
+}
 
 addEventListener("message", function (message) {
-  if(message.data.url) {
-    loader.load(
-      message.data.url,
-      (imageBitmap) => postMessage({ id: message.data.id, action: message.data.action, imageBitmap: imageBitmap, error: null }, [imageBitmap]),
-      undefined,
-      (err) => postMessage({ id: message.data.id, action: message.data.action, imageBitmap: null, error: err.message })
-    );
+  const data = message.data;
+  if(functions.hasOwnProperty(data.action)) {
+    functions[data.action](data);
   } else {
-    postMessage({ id: message.data.id, imageBitmap: null, error: 'Missing Resource URL' })
+    composeMessage({}, data, [], "Missing action")
   }
 });
+
+function composeMessage(payload, data, transfer = [], error = null) {
+  postMessage({
+    id: data.id,
+    action: data.action,
+    error: error,
+    version: VERSION,
+    ...payload,
+  }, transfer);
+}
+
+function init(data) {
+  loader.setOptions(data.options);
+  composeMessage({}, data);
+}
+
+function load(data) {
+  if (data.url) {
+    loader.load(
+      data.url,
+      (imageBitmap) => composeMessage({imageBitmap: imageBitmap}, data, [imageBitmap]),
+      undefined, // TODO: implement a progress
+      (err) => composeMessage({imageBitmap: imageBitmap}, data, [], err.message),
+    );
+  } else {
+    composeMessage({}, data, [], "Missing Resource URL")
+  }
+}

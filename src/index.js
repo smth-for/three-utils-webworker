@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
 import Stats from "three/examples/jsm/libs/stats.module";
+import { randFloat } from "three/src/math/MathUtils";
 
 // Debug
 const gui = new dat.GUI();
@@ -147,10 +148,13 @@ tick();
  * WORKERS
  */
 
-var activeWorkerGLTF = null;
+var activeWorkerTexture = null;
 const workerTextureGui = gui.addFolder("Texture Worker");
 const workerTextureParams = {
+  enableWorker: (typeof createImageBitmap !== 'undefined' && /Firefox/.test( navigator.userAgent ) === false),
   worker: null,
+  initWorker: false,
+  fallback: null,
   intervalTime: 1000,
   counter: 1,
   resetCounter: resetCounter,
@@ -183,38 +187,65 @@ workerGLTFGui.add(workerGLTFParams, "workerError").name("Error Worker");
  */
 
 // WORKER TEXTURE
+// Use an ImageBitmapLoader if imageBitmaps are supported. Moves much of the
+// expensive work of uploading a texture to the GPU off the main thread.
 function workerTextureRight() {
-  if (activeWorkerGLTF) {
-    clearInterval(activeWorkerGLTF);
-    activeWorkerGLTF = null;
-    workerTextureParams.worker.terminate();
-    workerTextureParams.worker = null;
+  if (activeWorkerTexture) {
+    clearInterval(activeWorkerTexture);
+    activeWorkerTexture = null;
+
+    if(!!workerTextureParams.worker) {
+      workerTextureParams.worker.terminate();
+      workerTextureParams.worker = null;
+    }
   } else {
-    if(!workerTextureParams.worker) {
+    if(!workerTextureParams.worker && workerTextureParams.enableWorker) {
       workerTextureParams.worker = new Worker("./workers/texture.worker.js");
       workerTextureParams.worker.addEventListener("message", function (message) {
         console.log("WebW Texture Message", message.data);
         if (!message.data.error) {
-          // plane1.material.color = new THREE.Color(0xff00ff);
-          const m = new THREE.DataTexture(message.data.imageBitmap);
-          // plane1.material.map = new THREE.CanvasTexture(
-          //   message.data.imageBitmap
-          // );
-          m.flipY = true;
-          plane1.material.map = m;
-          plane1.material.needsUpdate = true;
+          if(message.data.action === "init") {workerTextureParams.initWorker = true;}
+          if(message.data.action === "load") {
+            plane1.material.map = new THREE.CanvasTexture(message.data.imageBitmap);
+            plane1.material.needsUpdate = true;
+          }
         } else {
           alert("Worker Texture Error " + message.data.error);
         }
       });
-    }
-    activeWorkerGLTF = setInterval(() => {
-      var counterTmp = workerTextureParams.counter++;
       workerTextureParams.worker.postMessage({
-        id: counterTmp,
-        url:
-          "https://dummyimage.com/300x300/db1cdb/000000.png&text=" + counterTmp,
+        id: 'init',
+        action: 'init',
+        options: { imageOrientation: "flipY" }
       });
+    }
+
+    if(!workerTextureParams.fallback && !workerTextureParams.enableWorker) {
+      workerTextureParams.fallback = new THREE.TextureLoader();
+    }
+
+    activeWorkerTexture = setInterval(() => {
+      const counterTmp = workerTextureParams.counter++;
+      const url =  "https://dummyimage.com/2048x2048/db1cdb/000000.png&text=" + counterTmp;
+      
+      if(workerTextureParams.enableWorker) {
+        if(workerTextureParams.initWorker) {
+          workerTextureParams.worker.postMessage({
+            id: counterTmp,
+            action: 'load',
+            url: url
+          });
+        }
+      } else {
+        workerTextureParams.fallback.load(
+          url,
+          (texture) => {
+            plane1.material.map = texture;
+            plane1.material.needsUpdate = true;
+          }
+        )
+      }
+      
     }, workerTextureParams.intervalTime);
   }
 }
@@ -228,22 +259,29 @@ function resetCounter() {
 }
 
 // WORKER GLTF
-function workerGLTFInit() {
+function workerGLTFInit(multi = false) {
   workerGLTFParams.worker = new Worker("./workers/gltf.worker.js");
 
   workerGLTFParams.worker.addEventListener("message", function (message) {
     console.log("WebW GLTF Message", message.data);
     if (!message.data.error) {
       if(message.data.action === "init") {workerGLTFParams.initWorker = true;}
-      if(message.data.action === "load") {parseSceneAndInsert(message.data.gltf)}
+      if(message.data.action === "load") {
+        parseSceneAndInsert(message.data.gltf, multi);
+        if(multi) {
+          workerGLTFParams.worker.postMessage({id: 'dispose', action: "dispose"});
+        }
+      }
+      if(message.data.action === "dispose") {workerGLTFParams.worker.terminate()}
     } else {
       alert("Worker GLTF Error " + message.data.error);
     }
     // workerGLTF.terminate();
   });
   workerGLTFParams.worker.postMessage({
+    id: 'init',
     action: "init",
-    url: workerGLTFParams.dracoUrl,
+    options: { dracoUrl: workerGLTFParams.dracoUrl },
   });
 }
 
@@ -251,20 +289,24 @@ function workerGLTFLoad() {
   var intervalGLTF = setInterval(() => {
     if(workerGLTFParams.initWorker) {
       workerGLTFParams.worker.postMessage({
+        id: workerGLTFParams.gltfUrl,
         action: "load",
         url: workerGLTFParams.gltfUrl,
       });
       clearInterval(intervalGLTF);
     }
-  }, 100)
+  }, 100);
 }
 
 function workerGLTFError() {
   workerGLTFParams.worker.postMessage({url: ''});
 }
 
-function parseSceneAndInsert(sceneJson) {
+function parseSceneAndInsert(sceneJson, multi = false) {
   const mesh = new THREE.ObjectLoader().parse( sceneJson );
   mesh.material = material;
+  if(multi) {
+    mesh.position.set(randFloat(-2, 2), randFloat(-2, 2), randFloat(-2, 2));
+  }
   scene.add(mesh);
 }

@@ -1,6 +1,6 @@
 {
   "name": "@smth-for/three-utils-webworker",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Utils Web Worker ThreeJS functions",
   "keywords": [
     "javascript",
@@ -12,18 +12,21 @@
   ],
   "homepage": "https://github.com/smth-for/three-utils-webworker#readme",
   "bugs": {
-    "url" : "https://github.com/smth-for/three-utils-webworker/issues",
-    "email" : "technical@smth.it"
+    "url": "https://github.com/smth-for/three-utils-webworker/issues",
+    "email": "technical@smth.it"
   },
   "license": "MIT <https://github.com/smth-for/three-utils-webworker/blob/main/LICENSE>",
   "author": "Michael Musso <mmusso@smth.it> (https://smth.it/)",
   "scripts": {
+    "version:update": "node -p \"'export const VERSION = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.js",
     "build": "rimraf ./dist && webpack --config ./bundler/webpack.prod.js",
+    "build:run": "npm run build && http-server dist/",
     "dev": "webpack serve --config ./bundler/webpack.dev.js"
   },
   "dependencies": {
     "@babel/core": "^7.13.1",
     "@babel/preset-env": "^7.13.5",
+    "@yushijinhun/three-minifier-webpack": "^0.3.0",
     "babel-loader": "^8.2.2",
     "clean-webpack-plugin": "^3.0.0",
     "copy-webpack-plugin": "^7.0.0",
@@ -33,12 +36,15 @@
     "glob": "^7.1.7",
     "html-loader": "^2.1.1",
     "html-webpack-plugin": "^5.2.0",
+    "http-server": "^13.0.2",
+    "license-checker-webpack-plugin": "^0.2.1",
     "mini-css-extract-plugin": "^1.3.9",
     "portfinder-sync": "0.0.2",
     "raw-loader": "^4.0.2",
     "rimraf": "^3.0.2",
     "style-loader": "^2.0.0",
     "three": "^0.132.2",
+    "uglifyjs-webpack-plugin": "^2.2.0",
     "webpack": "^5.24.2",
     "webpack-cli": "^4.5.0",
     "webpack-dev-server": "^3.11.2",

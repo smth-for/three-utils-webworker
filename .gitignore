@@ -2,7 +2,7 @@ node_modules
 
 /dist/.gitkeep*
 /dist/index*
-/dist/*map
-/dist/*LICENSE
+/dist/version.js
+/dist/*.ico
 .DS_Store
 static/.gitkeep*

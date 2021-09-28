@@ -1,6 +1,10 @@
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCSSExtractPlugin = require("mini-css-extract-plugin");
+
+const ThreeMinifierPlugin = require("@yushijinhun/three-minifier-webpack");
+const threeMinifier = new ThreeMinifierPlugin();
+
 const path = require("path");
 const glob = require("glob");
 
@@ -31,6 +35,7 @@ module.exports = {
   },
   devtool: "source-map",
   plugins: [
+    threeMinifier,
     new CopyWebpackPlugin({
       patterns: [{ from: path.resolve(__dirname, "../static") }],
     }),
@@ -41,6 +46,9 @@ module.exports = {
     }),
     new MiniCSSExtractPlugin(),
   ],
+  resolve: {
+    plugins: [threeMinifier.resolver]
+  },
   module: {
     rules: [
       // HTML
