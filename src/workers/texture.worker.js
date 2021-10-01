@@ -38,7 +38,7 @@ function load(data) {
       data.url,
       (imageBitmap) => composeMessage({imageBitmap: imageBitmap}, data, [imageBitmap]),
       undefined, // TODO: implement a progress
-      (err) => composeMessage({imageBitmap: imageBitmap}, data, [], err.message),
+      (err) => composeMessage({imageBitmap: null}, data, [], err.message),
     );
   } else {
     composeMessage({}, data, [], "Missing Resource URL")
