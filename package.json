@@ -1,6 +1,6 @@
 {
   "name": "@smth-for/three-utils-webworker",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Utils Web Worker ThreeJS functions",
   "keywords": [
     "javascript",
@@ -8,7 +8,9 @@
     "webworker",
     "worker",
     "three",
-    "texture"
+    "texture",
+    "gltf",
+    "importer"
   ],
   "homepage": "https://github.com/smth-for/three-utils-webworker#readme",
   "bugs": {

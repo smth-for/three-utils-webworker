@@ -36,7 +36,7 @@ function load(data) {
   if (data.url) {
     loader.load(
       data.url,
-      (imageBitmap) => composeMessage({imageBitmap: imageBitmap}, data, [imageBitmap]),
+      (imageBitmap) => composeMessage({imageBitmap: imageBitmap}, data, []),
       undefined, // TODO: implement a progress
       (err) => composeMessage({imageBitmap: null}, data, [], err.message),
     );

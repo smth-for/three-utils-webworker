@@ -19,11 +19,11 @@ addEventListener("message", function (message) {
   if (functions.hasOwnProperty(data.action)) {
     functions[data.action](data);
   } else {
-    _composeMessage({}, data, [], "Missing action");
+    composeMessage({}, data, [], "Missing action");
   }
 });
 
-function _composeMessage(payload, data, transfer = [], error = null) {
+function composeMessage(payload, data, transfer = [], error = null) {
   postMessage(
     {
       id: data.id,
@@ -37,8 +37,8 @@ function _composeMessage(payload, data, transfer = [], error = null) {
 }
 
 function init(data) {
-  _setDracoDecoderPath(data.options);
-  _composeMessage({}, data);
+  setDracoDecoderPath(data.options);
+  composeMessage({}, data);
 }
 
 function load(data) {
@@ -47,28 +47,23 @@ function load(data) {
       data.url,
       (gltf) => {
         const sceneJson = gltf.scene.toJSON();
-        _composeMessage({ gltf: sceneJson }, data);
+        composeMessage({ gltf: sceneJson }, data);
       },
       undefined,
-      (err) => _composeMessage({ gltf: null }, data, err.message)
+      (err) => composeMessage({ gltf: null }, data, [], err.message)
     );
   } else {
-    postMessage({
-      id: data.id,
-      action: data.action,
-      gltf: null,
-      error: "Missing Resource URL",
-    });
+    composeMessage({ gltf: null }, data, [], "Missing Resource URL");
   }
 }
 
 function dispose(data) {
   dracoLoader.dispose();
-  _composeMessage({}, data);
+  composeMessage({}, data);
 }
 
 // Support Functions
-function _setDracoDecoderPath(options) {
+function setDracoDecoderPath(options) {
   dracoLoader.setDecoderPath(options.dracoUrl);
   dracoLoader.setDecoderConfig({ type: options.dracoDecoder || "wasm" });
   dracoLoader.setWorkerLimit(options.dracoWorkersNum || 4);
