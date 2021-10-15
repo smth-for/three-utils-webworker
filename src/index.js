@@ -155,25 +155,54 @@ function testKTX2() {
   var ktx2Loader = new KTX2Loader();
   ktx2Loader.setTranscoderPath("./libs/basis/");
   ktx2Loader.detectSupport(renderer);
-  const ormLoad = ktx2Loader.loadAsync("./maps/ktx2/silvertex_orm.ktx2");
-  const normalLoad = ktx2Loader.loadAsync("./maps/ktx2/silvertex_normal.ktx2");
+  // const ormLoad = ktx2Loader.loadAsync("./maps/ktx2/testMipmapsMapUASTC4.ktx2");
+  // const normalLoad = ktx2Loader.loadAsync("./maps/ktx2/testMipmapsMapUASTC4Normal.ktx2");
+  // const mapETC1SLoad = ktx2Loader.loadAsync("./maps/ktx2/testMipmapsMapETC1S2.ktx2");
+  // const mapUASTCLoad = ktx2Loader.loadAsync("./maps/ktx2/testMipmapsMapUASTC4.ktx2");
 
-  Promise.all([ormLoad, normalLoad]).then(([orm, normal]) => {
-    console.log("orm", orm, "normal", normal);
+  const ormLoad = ktx2Loader.loadAsync("./maps/ktx2/silvertex/ormUASTC.ktx2");
+  const normalLoad = ktx2Loader.loadAsync("./maps/ktx2/silvertex/normalUASTC.ktx2");
+  const mapLoad = ktx2Loader.loadAsync("./maps/ktx2/silvertex/ormUASTC.ktx2");
+
+  Promise.all([ormLoad, normalLoad, mapLoad]).then(([orm, normal, map]) => {
+    //mapETC1S.name = "mapETC1S";
+    //mapUASTC.name = "mapUASTC";
+
+    //const map = mapUASTC;
+    console.log("orm", orm, "normal", normal, "map", map);
     orm.wrapS = THREE.RepeatWrapping;
     orm.wrapT = THREE.RepeatWrapping;
-    orm.repeat.set(60, 60);
+    orm.repeat.set(100, 100);
+    orm.generateMipmaps = false; // no work true in compressed texture
+    orm.flipY = true; // no work true in compressed texture
     normal.wrapS = THREE.RepeatWrapping;
     normal.wrapT = THREE.RepeatWrapping;
-    normal.repeat.set(60, 60);
+    normal.repeat.set(100, 100);
+    normal.generateMipmaps = false; // no work true in compressed texture
+    normal.flipY = true; // no work true in compressed texture
+    map.wrapS = THREE.RepeatWrapping;
+    map.wrapT = THREE.RepeatWrapping;
+    map.repeat.set(100, 100);
+    map.generateMipmaps = false; // no work true in compressed texture
+    map.flipY = true; // no work true in compressed texture
+
+    orm.magFilter = THREE.LinearFilter;
+		orm.minFilter = THREE.LinearMipmapLinearFilter;
+    normal.magFilter = THREE.LinearFilter;
+		normal.minFilter = THREE.LinearMipmapLinearFilter;
+    map.magFilter = THREE.LinearFilter;
+		map.minFilter = THREE.LinearMipmapLinearFilter;
+
     const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color("#00ff00"),
+      color: new THREE.Color("#fff"),
+      map: map,
       aoMap: orm,
       roughnessMap: orm,
       metalnessMap: orm,
       normalMap: normal,
     });
 
+    console.log('KTX-MAterial-Based', material);
     plane1.material = material;
     plane2.material = material;
     plane1.material.needsUpdate = true;
@@ -248,10 +277,29 @@ function workerTextureRight() {
               workerTextureParams.initWorker = true;
             }
             if (message.data.action === "load") {
-              plane1.material.map = new THREE.CanvasTexture(
-                message.data.imageBitmap
-              );
+              // plane1.material.map = new THREE.CanvasTexture(
+              //   message.data.imageBitmap
+              // );
+              // plane1.material.needsUpdate = true;
+
+              const canvas = mipmap(256, "#f00");
+              const textureCanvas1 = new THREE.CanvasTexture(canvas);
+              textureCanvas1.mipmaps[0] = canvas;
+              textureCanvas1.mipmaps[1] = mipmap(128, "#0f0");
+              textureCanvas1.mipmaps[2] = mipmap(64, "#ff0");
+              textureCanvas1.mipmaps[3] = mipmap(32, "#00f");
+              textureCanvas1.mipmaps[4] = mipmap(16, "#400");
+              textureCanvas1.mipmaps[5] = mipmap(8, "#040");
+              textureCanvas1.mipmaps[6] = mipmap(4, "#004");
+              textureCanvas1.mipmaps[7] = mipmap(2, "#044");
+              textureCanvas1.mipmaps[8] = mipmap(1, "#404");
+              textureCanvas1.repeat.set(2, 2);
+              textureCanvas1.wrapS = THREE.RepeatWrapping;
+              textureCanvas1.wrapT = THREE.RepeatWrapping;
+
+              plane1.material.map = textureCanvas1;
               plane1.material.needsUpdate = true;
+              console.log(plane1.material.map.mipmaps);
             }
           } else {
             alert("Worker Texture Error " + message.data.error);
@@ -290,6 +338,21 @@ function workerTextureRight() {
       }
     }, workerTextureParams.intervalTime);
   }
+}
+
+function mipmap(size, color) {
+  const imageCanvas = document.createElement("canvas");
+  const context = imageCanvas.getContext("2d");
+
+  imageCanvas.width = imageCanvas.height = size;
+
+  context.fillStyle = "#444";
+  context.fillRect(0, 0, size, size);
+
+  context.fillStyle = color;
+  context.fillRect(0, 0, size / 2, size / 2);
+  context.fillRect(size / 2, size / 2, size / 2, size / 2);
+  return imageCanvas;
 }
 
 function workerTextureError() {

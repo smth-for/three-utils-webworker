@@ -3,8 +3,8 @@ Do Not Translate or Localize
 
 
 --------------------------------------------------------------------------------
-babel-loader v8.2.2 - Luis Couto
-git+https://github.com/babel/babel-loader.git
+babel-loader v8.2.2 - Luis Couto <hello@luiscouto.pt>
+https://github.com/babel/babel-loader.git
 --------------------------------------------------------------------------------
 
 Copyright (c) 2014-2019 Luís Couto <hello@luiscouto.pt>
@@ -33,7 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 --------------------------------------------------------------------------------
 css-loader v5.2.7 - Tobias Koppers @sokra
-git+https://github.com/webpack-contrib/css-loader.git
+webpack-contrib/css-loader
 --------------------------------------------------------------------------------
 
 Copyright JS Foundation and other contributors
@@ -269,7 +269,7 @@ limitations under the License.
 
 --------------------------------------------------------------------------------
 html-loader v2.1.2 - Tobias Koppers @sokra
-git+https://github.com/webpack-contrib/html-loader.git
+webpack-contrib/html-loader
 --------------------------------------------------------------------------------
 
 Copyright JS Foundation and other contributors
@@ -295,8 +295,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 --------------------------------------------------------------------------------
-html-webpack-plugin v5.3.2 - Jan Nicklas
-git+https://github.com/jantimon/html-webpack-plugin.git
+html-webpack-plugin v5.3.2 - Jan Nicklas <j.nicklas@me.com> (https://github.com/jantimon)
+https://github.com/jantimon/html-webpack-plugin.git
 --------------------------------------------------------------------------------
 
 Copyright JS Foundation and other contributors
@@ -323,7 +323,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 --------------------------------------------------------------------------------
 mini-css-extract-plugin v1.6.2 - Tobias Koppers @sokra
-git+https://github.com/webpack-contrib/mini-css-extract-plugin.git
+webpack-contrib/mini-css-extract-plugin
 --------------------------------------------------------------------------------
 
 Copyright JS Foundation and other contributors
@@ -350,7 +350,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 --------------------------------------------------------------------------------
 three v0.132.2 - mrdoob
-git+https://github.com/mrdoob/three.js.git
+https://github.com/mrdoob/three.js
 --------------------------------------------------------------------------------
 
 The MIT License
