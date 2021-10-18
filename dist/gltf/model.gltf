@@ -1,0 +1,81 @@
+{
+  "scenes": [{ "name": "Scene", "nodes": [0] }],
+  "nodes": [{ "mesh": 0, "name": "athena_cover01" }],
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "cover01",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.800000011920929, 0.800000011920929, 0.800000011920929, 1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.5
+      },
+      "emissiveFactor": [0, 0, 0],
+      "alphaMode": "OPAQUE"
+    }
+  ],
+  "meshes": [
+    {
+      "name": "athena_cover01",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3,
+            "JOINTS_0": 4,
+            "WEIGHTS_0": 5
+          },
+          "indices": 0,
+          "material": 0,
+          "mode": 4,
+          "extensions": {
+            "KHR_draco_mesh_compression": {
+              "bufferView": 0,
+              "attributes": {
+                "POSITION": 0,
+                "NORMAL": 1,
+                "TEXCOORD_0": 2,
+                "JOINTS_0": 3,
+                "WEIGHTS_0": 4
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accessors": [
+    { "componentType": 5123, "count": 162720, "type": "SCALAR" },
+    {
+      "componentType": 5126,
+      "count": 27700,
+      "max": [0.2981205880641937, 0.8378656506538391, 0.2672596573829651],
+      "min": [-0.29812055826187134, 0.4136319160461426, -0.3061198592185974],
+      "type": "VEC3"
+    },
+    { "componentType": 5126, "count": 27700, "type": "VEC3" },
+    { "componentType": 5126, "count": 27700, "type": "VEC2" },
+    { "componentType": 5123, "count": 27700, "type": "VEC4" },
+    { "componentType": 5126, "count": 27700, "type": "VEC4" }
+  ],
+  "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 80737 }],
+  "buffers": [
+    {
+      "byteLength": null,
+      "uri": "./model.bin"
+    }
+  ],
+  "asset": {
+    "generator": "Khronos glTF Blender I/O v0.9.36",
+    "version": "2.0"
+  },
+  "scene": 0,
+  "extensionsRequired": ["KHR_draco_mesh_compression"],
+  "extensionsUsed": ["KHR_draco_mesh_compression"],
+  "updated_at": "2020-01-20T14:33:32.000Z",
+  "created_at": "2020-01-20T14:33:05.000Z",
+  "id": "5e25ba211250c8419a6b41b2"
+}

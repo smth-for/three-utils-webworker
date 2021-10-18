@@ -174,11 +174,13 @@ const workerGLTFParams = {
   initWorker: false,
   dracoUrl: `${document.URL}libs/draco/`,
   gltfUrl: `${document.URL}gltf/model.gltf`,
+  multi: false,
   workerInit: workerGLTFInit,
   workerLoad: workerGLTFLoad,
   workerError: workerGLTFError,
 };
 workerGLTFGui.add(workerGLTFParams, "gltfUrl");
+workerGLTFGui.add(workerGLTFParams, "multi");
 workerGLTFGui.add(workerGLTFParams, "workerInit").name("Init Worker");
 workerGLTFGui.add(workerGLTFParams, "workerLoad").name("Load Worker");
 workerGLTFGui.add(workerGLTFParams, "workerError").name("Error Worker");
@@ -281,7 +283,7 @@ function resetCounter() {
 }
 
 // WORKER GLTF
-function workerGLTFInit(multi = false) {
+function workerGLTFInit() {
   workerGLTFParams.worker = new Worker("./workers/gltf.worker.js");
 
   workerGLTFParams.worker.addEventListener("message", function (message) {
@@ -291,8 +293,8 @@ function workerGLTFInit(multi = false) {
         workerGLTFParams.initWorker = true;
       }
       if (message.data.action === "load") {
-        parseSceneAndInsert(message.data.gltf, multi);
-        if (multi) {
+        parseSceneAndInsert(message.data.gltf, workerGLTFParams.multi);
+        if (workerGLTFParams.multi) {
           workerGLTFParams.worker.postMessage({
             id: "dispose",
             action: "dispose",
@@ -342,7 +344,7 @@ function parseSceneAndInsert(sceneJson, multi = false) {
 
 // WORKER KTX
 function workerKTXInit() {
-  workerKTXParams.worker = new Worker("./workers/ktx.worker.js");
+  workerKTXParams.worker = new Worker("./workers/ktx2.worker.js");
 
   workerKTXParams.worker.addEventListener("message", function (message) {
     console.log("WebW KTX Message", message.data);
