@@ -4,7 +4,9 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "dat.gui";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { randFloat } from "three/src/math/MathUtils";
+import { FileLoader, CompressedTexture } from "three";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+import { BasisTextureLoader } from "three/examples/jsm/loaders/BasisTextureLoader.js";
 
 // Debug
 const gui = new dat.GUI();
@@ -131,88 +133,20 @@ const clock = new THREE.Clock();
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
-
-  // Update objects
-  // sphere.rotation.y = 0.5 * elapsedTime;
-
   // Update Orbital Controls
   controls.update();
-
   // Render
   renderer.render(scene, camera);
-
   // Call tick again on the next frame
   window.requestAnimationFrame(tick);
-
   stats.update();
 };
 
 tick();
 
-gui.add({ testKTX2: testKTX2 }, "testKTX2").name("testKTX2");
-
-function testKTX2() {
-  var ktx2Loader = new KTX2Loader();
-  ktx2Loader.setTranscoderPath("./libs/basis/");
-  ktx2Loader.detectSupport(renderer);
-  // const ormLoad = ktx2Loader.loadAsync("./maps/ktx2/testMipmapsMapUASTC4.ktx2");
-  // const normalLoad = ktx2Loader.loadAsync("./maps/ktx2/testMipmapsMapUASTC4Normal.ktx2");
-  // const mapETC1SLoad = ktx2Loader.loadAsync("./maps/ktx2/testMipmapsMapETC1S2.ktx2");
-  // const mapUASTCLoad = ktx2Loader.loadAsync("./maps/ktx2/testMipmapsMapUASTC4.ktx2");
-
-  const ormLoad = ktx2Loader.loadAsync("./maps/ktx2/silvertex/ormUASTC.ktx2");
-  const normalLoad = ktx2Loader.loadAsync("./maps/ktx2/silvertex/normalUASTC.ktx2");
-  const mapLoad = ktx2Loader.loadAsync("./maps/ktx2/silvertex/ormUASTC.ktx2");
-
-  Promise.all([ormLoad, normalLoad, mapLoad]).then(([orm, normal, map]) => {
-    //mapETC1S.name = "mapETC1S";
-    //mapUASTC.name = "mapUASTC";
-
-    //const map = mapUASTC;
-    console.log("orm", orm, "normal", normal, "map", map);
-    orm.wrapS = THREE.RepeatWrapping;
-    orm.wrapT = THREE.RepeatWrapping;
-    orm.repeat.set(100, 100);
-    orm.generateMipmaps = false; // no work true in compressed texture
-    orm.flipY = true; // no work true in compressed texture
-    normal.wrapS = THREE.RepeatWrapping;
-    normal.wrapT = THREE.RepeatWrapping;
-    normal.repeat.set(100, 100);
-    normal.generateMipmaps = false; // no work true in compressed texture
-    normal.flipY = true; // no work true in compressed texture
-    map.wrapS = THREE.RepeatWrapping;
-    map.wrapT = THREE.RepeatWrapping;
-    map.repeat.set(100, 100);
-    map.generateMipmaps = false; // no work true in compressed texture
-    map.flipY = true; // no work true in compressed texture
-
-    orm.magFilter = THREE.LinearFilter;
-		orm.minFilter = THREE.LinearMipmapLinearFilter;
-    normal.magFilter = THREE.LinearFilter;
-		normal.minFilter = THREE.LinearMipmapLinearFilter;
-    map.magFilter = THREE.LinearFilter;
-		map.minFilter = THREE.LinearMipmapLinearFilter;
-
-    const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color("#fff"),
-      map: map,
-      aoMap: orm,
-      roughnessMap: orm,
-      metalnessMap: orm,
-      normalMap: normal,
-    });
-
-    console.log('KTX-MAterial-Based', material);
-    plane1.material = material;
-    plane2.material = material;
-    plane1.material.needsUpdate = true;
-    plane2.material.needsUpdate = true;
-  });
-}
 /*
  * WORKERS
  */
-
 var activeWorkerTexture = null;
 const workerTextureGui = gui.addFolder("Texture Worker");
 const workerTextureParams = {
@@ -238,8 +172,8 @@ const workerGLTFGui = gui.addFolder("GLTF Worker");
 const workerGLTFParams = {
   worker: null,
   initWorker: false,
-  dracoUrl: "https://vestanest.smth.it/draco-r121/", //
-  gltfUrl: "https://vestanest.smth.it/download/gltf/5e25ba211250c8419a6b41b2",
+  dracoUrl: `${document.URL}libs/draco/`,
+  gltfUrl: `${document.URL}gltf/model.gltf`,
   workerInit: workerGLTFInit,
   workerLoad: workerGLTFLoad,
   workerError: workerGLTFError,
@@ -248,6 +182,23 @@ workerGLTFGui.add(workerGLTFParams, "gltfUrl");
 workerGLTFGui.add(workerGLTFParams, "workerInit").name("Init Worker");
 workerGLTFGui.add(workerGLTFParams, "workerLoad").name("Load Worker");
 workerGLTFGui.add(workerGLTFParams, "workerError").name("Error Worker");
+
+var activeWorkerKTX = null;
+const workerKTXGui = gui.addFolder("KTX Worker");
+const workerKTXParams = {
+  worker: null,
+  initWorker: false,
+  workerConfig: {},
+  basisUrl: `${document.URL}libs/basis/`,
+  ktxUrl: `${document.URL}maps/ktx2/test/lynx2048UASTC.ktx2`,
+  workerInit: workerKTXInit,
+  workerLoad: workerKTXLoad,
+  workerError: workerKTXError,
+};
+workerKTXGui.add(workerKTXParams, "ktxUrl");
+workerKTXGui.add(workerKTXParams, "workerInit").name("Init Worker");
+workerKTXGui.add(workerKTXParams, "workerLoad").name("Load Worker");
+workerKTXGui.add(workerKTXParams, "workerError").name("Error Worker");
 
 /*
  * WEB WORKER FUNCTIONS
@@ -277,29 +228,10 @@ function workerTextureRight() {
               workerTextureParams.initWorker = true;
             }
             if (message.data.action === "load") {
-              // plane1.material.map = new THREE.CanvasTexture(
-              //   message.data.imageBitmap
-              // );
-              // plane1.material.needsUpdate = true;
-
-              const canvas = mipmap(256, "#f00");
-              const textureCanvas1 = new THREE.CanvasTexture(canvas);
-              textureCanvas1.mipmaps[0] = canvas;
-              textureCanvas1.mipmaps[1] = mipmap(128, "#0f0");
-              textureCanvas1.mipmaps[2] = mipmap(64, "#ff0");
-              textureCanvas1.mipmaps[3] = mipmap(32, "#00f");
-              textureCanvas1.mipmaps[4] = mipmap(16, "#400");
-              textureCanvas1.mipmaps[5] = mipmap(8, "#040");
-              textureCanvas1.mipmaps[6] = mipmap(4, "#004");
-              textureCanvas1.mipmaps[7] = mipmap(2, "#044");
-              textureCanvas1.mipmaps[8] = mipmap(1, "#404");
-              textureCanvas1.repeat.set(2, 2);
-              textureCanvas1.wrapS = THREE.RepeatWrapping;
-              textureCanvas1.wrapT = THREE.RepeatWrapping;
-
-              plane1.material.map = textureCanvas1;
+              plane1.material.map = new THREE.CanvasTexture(
+                message.data.imageBitmap
+              );
               plane1.material.needsUpdate = true;
-              console.log(plane1.material.map.mipmaps);
             }
           } else {
             alert("Worker Texture Error " + message.data.error);
@@ -338,21 +270,6 @@ function workerTextureRight() {
       }
     }, workerTextureParams.intervalTime);
   }
-}
-
-function mipmap(size, color) {
-  const imageCanvas = document.createElement("canvas");
-  const context = imageCanvas.getContext("2d");
-
-  imageCanvas.width = imageCanvas.height = size;
-
-  context.fillStyle = "#444";
-  context.fillRect(0, 0, size, size);
-
-  context.fillStyle = color;
-  context.fillRect(0, 0, size / 2, size / 2);
-  context.fillRect(size / 2, size / 2, size / 2, size / 2);
-  return imageCanvas;
 }
 
 function workerTextureError() {
@@ -421,4 +338,83 @@ function parseSceneAndInsert(sceneJson, multi = false) {
     mesh.position.set(randFloat(-2, 2), randFloat(-2, 2), randFloat(-2, 2));
   }
   scene.add(mesh);
+}
+
+// WORKER KTX
+function workerKTXInit() {
+  workerKTXParams.worker = new Worker("./workers/ktx.worker.js");
+
+  workerKTXParams.worker.addEventListener("message", function (message) {
+    console.log("WebW KTX Message", message.data);
+    if (!message.data.error) {
+      if (message.data.action === "init") {
+        workerKTXParams.initWorker = true;
+      }
+      if (message.data.action === "load") {
+        const compressTexture = _createCompressTextureFromData(message.data);
+        plane1.material.map = compressTexture;
+        plane1.material.color = new THREE.Color('#fff');
+        plane1.material.needsUpdate = true;
+        plane2.material.map = compressTexture;
+        plane2.material.color = new THREE.Color('#fff');
+        plane2.material.needsUpdate = true;
+        workerKTXParams.worker.postMessage({
+          id: "dispose",
+          action: "dispose",
+        });
+      }
+      if (message.data.action === "dispose") {
+        workerKTXParams.worker.terminate();
+      }
+    } else {
+      alert("Worker KTX Error " + message.data.error);
+    }
+    // workerKTX.terminate();
+  });
+
+  workerKTXParams.workerConfig = {
+    astcSupported: renderer.extensions.has( 'WEBGL_compressed_texture_astc' ),
+    etc1Supported: renderer.extensions.has( 'WEBGL_compressed_texture_etc1' ),
+    etc2Supported: renderer.extensions.has( 'WEBGL_compressed_texture_etc' ),
+    dxtSupported: renderer.extensions.has( 'WEBGL_compressed_texture_s3tc' ),
+    bptcSupported: renderer.extensions.has( 'EXT_texture_compression_bptc' ),
+    pvrtcSupported: renderer.extensions.has( 'WEBGL_compressed_texture_pvrtc' )
+      || renderer.extensions.has( 'WEBKIT_WEBGL_compressed_texture_pvrtc' )
+  };
+
+  workerKTXParams.worker.postMessage({
+    id: "init",
+    action: "init",
+    options: { basisUrl: workerKTXParams.basisUrl, workerConfig: workerKTXParams.workerConfig},
+  });
+}
+
+function workerKTXLoad() {
+  var intervalKTX = setInterval(() => {
+    if (workerKTXParams.initWorker) {
+      workerKTXParams.worker.postMessage({
+        id: workerKTXParams.ktxUrl,
+        action: "load",
+        url: workerKTXParams.ktxUrl,
+      });
+      clearInterval(intervalKTX);
+    }
+  }, 100);
+}
+
+function workerKTXError() {
+  workerKTXParams.worker.postMessage({ url: "" });
+}
+
+function _createCompressTextureFromData(data) {
+  const { mipmaps, width, height, format, type, error, dfdTransferFn, dfdFlags } = data;
+		if ( type === 'error' ) return Promise.reject( error );
+		const texture = new CompressedTexture( mipmaps, width, height, format, THREE.UnsignedByteType );
+		texture.minFilter = mipmaps.length === 1 ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter;
+		texture.magFilter = THREE.LinearFilter;
+		texture.generateMipmaps = false;
+		texture.needsUpdate = true;
+		texture.encoding = dfdTransferFn === 2 ? THREE.sRGBEncoding : THREE.LinearEncoding;
+		texture.premultiplyAlpha = !! ( dfdFlags & 1 );
+  return texture;
 }
